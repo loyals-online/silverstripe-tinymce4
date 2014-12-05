@@ -1,0 +1,10 @@
+---
+Name: tinymce4
+---
+LeftAndMain:
+  extensions:
+    - LeftAndMainTinyExtension
+
+SiteTree:
+  extensions:
+    ['SiteTreeTinyExtension']
