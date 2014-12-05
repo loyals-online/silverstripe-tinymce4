@@ -5,7 +5,7 @@ silverstripe-tinymce4
 
 ## Usage
 - HtmlEditorConfig is replaced with CustomHtmlEditorConfig
-- HtmlEditorField is replaces with CustomHtmlEditorField
+- HtmlEditorField is replaced with CustomHtmlEditorField
 
 **When using this module, beware: using HTMLEditorField will probably break the admin. Replace all occurences with CustomHTMLEditorField.**
 
@@ -29,3 +29,5 @@ silverstripe-tinymce4
 		return $fields;
 	}
 ```
+
+Note: Be sure to allow access to 'thirdparty/tinymce/tiny_mce_gzip.php'; a .htaccess file is added, some extra configuration in required when using Nginx.
