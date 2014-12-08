@@ -12,8 +12,8 @@
  */
 class CustomHTMLText extends HTMLText {
 
-	public function scaffoldFormField($title = null, $params = null) { error_log('test');
-		return new CustomHtmlEditorField($this->name, $title);
+	public function scaffoldFormField($title = null, $params = null) {
+		return CustomHtmlEditorField::create($this->name, $title)->addExtraClass('stacked');
 	}
 
 }

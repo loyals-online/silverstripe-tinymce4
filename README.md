@@ -30,4 +30,4 @@ silverstripe-tinymce4
 	}
 ```
 
-Note: Be sure to allow access to 'thirdparty/tinymce/tiny_mce_gzip.php'; a .htaccess file is added, some extra configuration in required when using Nginx.
+Note: Be sure to allow access to 'thirdparty/tinymce/tiny_mce_gzip.php'; a .htaccess file is added, some extra configuration is required when using Nginx.

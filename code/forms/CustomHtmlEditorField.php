@@ -53,6 +53,17 @@ class CustomHtmlEditorField extends TextareaField {
 		} 
 
 		Requirements::customScript($configObj->generateJS(), 'htmlEditorConfig');
+
+		// block old scripts
+		Requirements::block(MCE_ROOT . 'tiny_mce_src.js');
+		Requirements::block(FRAMEWORK_DIR ."/javascript/HtmlEditorField.js");
+
+		// load replacements
+		Requirements::javascript(TINYMCE4_DIR ."/javascript/HtmlEditorField.js");
+
+		if(Member::currentUser()) {
+			CustomHtmlEditorConfig::set_active(Member::currentUser()->getHtmlEditorConfigForCMS());
+		}
 	}
 	
 	/**
