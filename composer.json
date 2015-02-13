@@ -1,0 +1,26 @@
+{
+    "name": "mediaweb/silverstripe-tinymce4",
+    "description": "Replaces the default Silverstripe HTMLEditor (TinyMCE v3) with TinyMCE v4.",
+    "type": "silverstripe-module",
+    "homepage": "https://github.com/Mediaweb/silverstripe-tinymce4",
+    "keywords": ["silverstripe", "editor", "htmleditor", "tinymce"],
+    "license": "BSD-3-Clause",
+    "authors": [
+    {
+        "name": "Gabrijel Gavranović",
+        "email": "gabrijel@gavro.nl"
+    }],
+    "support": {
+        "issues": "https://github.com/Mediaweb/silverstripe-tinymce4/issues"
+    },
+    "require": {
+        "silverstripe/cms": "~3.1",
+        "silverstripe/framework": "~3.1"
+    },
+    "extra": {
+        "installer-name": "tinymce4",
+        "screenshots": [
+            "http://mediaweb.nl/assets/public/silverstripe-tinymce4.png"
+        ]
+    }
+}

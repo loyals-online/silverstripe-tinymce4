@@ -1,7 +1,9 @@
 silverstripe-tinymce4
 =====================
 
-*WARNING: EXPERIMENTAL, WIP, Readme will be updated.*
+Replaces the default Silverstripe HTMLEditor (TinyMCE v3) with TinyMCE v4.
+
+![Screenshop](http://mediaweb.nl/assets/public/silverstripe-tinymce4.png)
 
 ## Usage
 - HtmlEditorConfig is replaced with CustomHtmlEditorConfig
