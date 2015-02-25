@@ -43,12 +43,7 @@ CustomHtmlEditorConfig::get('cms')->enablePlugins(array(
 
 CustomHtmlEditorConfig::get('cms')->addButtonsToLine(1, 'unlink', 'anchor', '|', 'code', 'fullscreen', '|');
 CustomHtmlEditorConfig::get('cms')->insertButtonsBefore('undo', 'menubtn', '|');
+CustomHtmlEditorConfig::get('cms')->insertButtonsBefore('bold', 'formatselect', '|');
 
 // Menubar options, remove file (and others)
 CustomHtmlEditorConfig::get('cms')->setOption('menubar', 'edit view format table tools');
-
-// Append styles from editor.css (classes)
-CustomHtmlEditorConfig::get('cms')->setOption('importcss_append', true);
-CustomHtmlEditorConfig::get('cms')->setOption('importcss_groups', array(
-    array('title' => 'Custom styles')
-));
