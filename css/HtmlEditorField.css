@@ -15,10 +15,6 @@
 	box-sizing: border-box;
 }
 
-.cms.mce-fullscreen .cms-content  div.mce-fullscreen > .mce-container-body .mce-edit-area.mce-container {
-	height: calc(100% - 103px);
-}
-
 .cms.mce-fullscreen .cms-content  div.mce-fullscreen > .mce-container-body .mce-edit-area.mce-container iframe {
 	height: 100% !important;
 }

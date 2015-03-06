@@ -86,11 +86,27 @@
 			 * fullscreen windows resize fix
 			 */
 			window.autoResizeFullScreen = function(e) {
+				var container = jQuery(e.target.container);
+
 				if(e.state === true) {
+					var toolbar = container.find('.mce-toolbar-grp');
+					var statusbar = container.find('.mce-statusbar');
+
+					extraHeight = 4; // <-- add extra 'cushioning' (border stuff)
+					if(toolbar.length) {
+						extraHeight += toolbar.height();
+					}
+
+					if(statusbar.length) {
+						extraHeight += statusbar.height();
+					}
+
+					container.find('.mce-container-body .mce-edit-area.mce-container').css({height: 'calc(100% - '+extraHeight+'px)'});
+
 					e.target.container.style.width = jQuery('#pages-controller-cms-content .cms-content-fields').width()+'px';
 					e.target.container.style.left = jQuery('#pages-controller-cms-content .cms-content-fields').offset().left+'px';
-					// e.target.container.style.top = jQuery('#pages-controller-cms-content .cms-content-fields').offset().top+'px';
 				} else {
+					container.find('.mce-container-body .mce-edit-area.mce-container').css({height: 'auto'});
 					e.target.container.style.width = '100%';
 					e.target.container.style.left = 'auto';
 					// e.target.container.style.top = 'auto';
