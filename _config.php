@@ -3,6 +3,7 @@
 define('TINYMCE4_PATH', dirname(__FILE__));
 define('TINYMCE4_DIR', basename(TINYMCE4_PATH));
 
+Object::useCustomClass('HtmlEditorField', 'CustomHtmlEditorField');
 Config::inst()->update('HtmlEditorField', 'use_gzip', false);
 
 // Default CMS HTMLEditorConfig
