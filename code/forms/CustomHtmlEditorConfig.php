@@ -1,12 +1,12 @@
-<?php 
+<?php
 
 /**
  * A PHP version of TinyMCE's configuration, to allow various parameters to be configured on a site or section basis
- * 
+ *
  * There can be multiple HtmlEditorConfig's, which should always be created / accessed using HtmlEditorConfig::get.
  * You can then set the currently active config using set_active. Whichever config is active when
  * HtmlEditorField#Field is called wins.
- *  
+ *
  * @author "Hamish Friedlander" <hamish@silverstripe.com>
  * @package forms
  * @subpackage fields-formattedinput
@@ -14,13 +14,13 @@
 class CustomHtmlEditorConfig {
 
 	private static $configs = array();
-	
+
 	private static $current = null;
-	
+
 	/**
 	 * Get the HtmlEditorConfig object for the given identifier. This is a correct way to get an HtmlEditorConfig
 	 * instance - do not call 'new'
-	 * 
+	 *
 	 * @param $identifier string - the identifier for the config set
 	 * @return HtmlEditorConfig - the configuration object. This will be created if it does not yet exist for that
 	 *                            identifier
@@ -29,7 +29,7 @@ class CustomHtmlEditorConfig {
 		if (!array_key_exists($identifier, self::$configs)) self::$configs[$identifier] = new CustomHtmlEditorConfig();
 		return self::$configs[$identifier];
 	}
-	
+
 	/**
 	 * Set the currently active configuration object
 	 * @param $identifier string - the identifier for the config set
@@ -38,16 +38,25 @@ class CustomHtmlEditorConfig {
 	public static function set_active($identifier = null) {
 		self::$current = $identifier;
 	}
-	
+
+	/**
+	 * Get the currently active configuration identifier
+	 * @return String - the active configuration identifier
+	 */
+	public static function get_active_identifier() {
+		$identifier = self::$current ? self::$current : 'default';
+		return $identifier;
+	}
+
 	/**
 	 * Get the currently active configuration object
 	 * @return HtmlEditorConfig - the active configuration object
 	 */
 	public static function get_active() {
-		$identifier = self::$current ? self::$current : 'default';
+		$identifier = self::get_active_identifier();
 		return self::get($identifier);
 	}
-	
+
 	/**
 	 * Get the available configurations as a map of friendly_name to
 	 * configuration name.
@@ -55,14 +64,14 @@ class CustomHtmlEditorConfig {
 	 */
 	public static function get_available_configs_map() {
 		$configs = array();
-		
+
 		foreach(self::$configs as $identifier => $config) {
 			$configs[$identifier] = $config->getOption('friendly_name');
 		}
-		
+
 		return $configs;
 	}
-	
+
 	/**
 	 * Holder for all TinyMCE settings _except_ plugins and buttons
 	 */
@@ -80,7 +89,7 @@ class CustomHtmlEditorConfig {
 		'theme_advanced_toolbar_location' => "top",
 		'theme_advanced_toolbar_align' => "left",
 		'theme_advanced_toolbar_parent' => "right",
-		
+
 		'blockquote_clear_tag' => "p",
 		'table_inline_editing' => true,
 
@@ -89,7 +98,7 @@ class CustomHtmlEditorConfig {
 		'verify_html' => true,
 		'browser_spellcheck' => true,
 	);
-	
+
 	/**
 	 * Holder list of enabled plugins
 	 */
@@ -146,12 +155,12 @@ class CustomHtmlEditorConfig {
 	/**
 	 * Get the current value of an option
 	 * @param $k string - The key of the option to get
-	 * @return mixed - The value of the specified option 
+	 * @return mixed - The value of the specified option
 	 */
 	public function getOption($k) {
 		if(isset($this->settings[$k])) return $this->settings[$k];
 	}
-	
+
 	/**
 	 * Set the value of one option
 	 * @param $k string - The key of the option to set
@@ -162,7 +171,7 @@ class CustomHtmlEditorConfig {
 		$this->settings[$k] = $v;
 		return $this;
 	}
-	
+
 	/**
 	 * Set multiple options
 	 * @param $a array - The options to set, as keys and values of the array
@@ -174,15 +183,15 @@ class CustomHtmlEditorConfig {
 		}
 		return $this;
 	}
-	
+
 	/**
-	 * Enable one or several plugins. Will maintain unique list if already 
+	 * Enable one or several plugins. Will maintain unique list if already
 	 * enabled plugin is re-passed. If passed in as a map of plugin-name to path,
 	 * the plugin will be loaded by tinymce.PluginManager.load() instead of through tinyMCE.init().
 	 * Keep in mind that these externals plugins require a dash-prefix in their name.
-	 * 
+	 *
 	 * @see http://wiki.moxiecode.com/index.php/TinyMCE:API/tinymce.PluginManager/load
-	 * 
+	 *
 	 * @param String [0..] a string, or several strings, or a single array of strings - The plugins to enable
 	 * @return null
 	 */
@@ -207,7 +216,7 @@ class CustomHtmlEditorConfig {
 	public function disablePlugins() {
 		$plugins = func_get_args();
 		if (is_array(current($plugins))) $plugins = current($plugins);
-		
+
 		foreach ($plugins as $plugin) {
 			if(array_key_exists($plugin, $this->plugins)) {
 				unset($this->plugins[$plugin]);
@@ -215,20 +224,20 @@ class CustomHtmlEditorConfig {
 		}
 		return $this;
 	}
-	
+
 	/**
 	 * @return Array
 	 */
 	public function getPlugins() {
 		return $this->plugins;
 	}
-	
+
 	/**
 	 * Totally re-set the buttons on a given line
-	 * 
+	 *
 	 * @param integer from 1..3 - The line number to redefine
 	 * @param string  a string or several strings, or a single array of strings - The button names to make this line
-	 *                contain 
+	 *                contain
 	 * @return null
 	 */
 	public function setButtonsForLine() {
@@ -242,30 +251,30 @@ class CustomHtmlEditorConfig {
 		$this->buttons[$line] = is_array($buttons) ? $buttons : array($buttons);
 		return $this;
 	}
-	
+
 	/**
 	 * Add buttons to the end of a line
 	 * @param integer from 1..3
 	 * @param string a string, or several strings, or a single array of strings - The button names to add to the end
-	 *               of this line 
+	 *               of this line
 	 * @return null
 	 */
 	public function addButtonsToLine() {
 		$inserts = func_get_args();
 		$line = array_shift($inserts);
 		if (is_array($inserts[0])) $inserts = $inserts[0];
-		
+
 		foreach ($inserts as $button) {
 			$this->buttons[$line][] = $button;
 		}
 		return $this;
 	}
-	
+
 	/**
 	 * Internal function for adding and removing buttons related to another button
 	 * @param $name string - the name of the button to modify
 	 * @param $offset integer - the offset relative to that button to perform an array_splice at - 0 for before $name,
-	 *                          1 for after 
+	 *                          1 for after
 	 * @param $del integer - the number of buttons to remove at the position given by index(string) + offset
 	 * @param $add mixed - an array or single item to insert at the position given by index(string) + offset,
 	 *                     or null for no insertion
@@ -281,12 +290,12 @@ class CustomHtmlEditorConfig {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * Insert buttons before the first occurance of another button
 	 * @param string - the name of the button to insert other buttons before
 	 * @param string a string, or several strings, or a single array of strings - the button names to insert before
-	 *               that button 
+	 *               that button
 	 * @return boolean - true if insertion occured, false if it did not (because the given button name was not found)
 	 */
 	public function insertButtonsBefore() {
@@ -294,12 +303,12 @@ class CustomHtmlEditorConfig {
 		$before = array_shift($inserts);
 		return $this->modifyButtons($before, 0, 0, $inserts);
 	}
-	
+
 	/**
 	 * Insert buttons after the first occurance of another button
 	 * @param string - the name of the button to insert other buttons after
 	 * @param string a string, or several strings, or a single array of strings - the button names to insert after
-	 *               that button 
+	 *               that button
 	 * @return boolean - true if insertion occured, false if it did not (because the given button name was not found)
 	 */
 	public function insertButtonsAfter() {
@@ -307,7 +316,7 @@ class CustomHtmlEditorConfig {
 		$after = array_shift($inserts);
 		return $this->modifyButtons($after, 1, 0, $inserts);
 	}
-	
+
 	/**
 	 * Remove the first occurance of buttons
 	 * @param string one or more strings - the name of the buttons to remove
@@ -319,40 +328,97 @@ class CustomHtmlEditorConfig {
 			$this->modifyButtons($button, 0, 1);
 		}
 	}
-	
+
+
 	/**
-	 * Generate the javascript that will set tinyMCE's configuration to that of the current settings of this object
-	 * @return string - the javascript
+	 * Generate the JavaScript that will set TinyMCE's configuration:
+	 * - Parse all configurations into JSON objects to be used in JavaScript
+	 * - Includes TinyMCE and configurations using the {@link Requirements} system
 	 */
-	public function generateJS() {
-		$config = $this->settings;
-		
-		// plugins
+	public static function require_js() {
+		require_once TINYMCE4_PATH . '/thirdparty/tinymce/tiny_mce_gzip.php';
+		$useGzip = Config::inst()->get('CustomHtmlEditorField', 'use_gzip');
+
+		$configs = array();
+		$externalPlugins = array();
 		$internalPlugins = array();
-		$externalPluginsJS = '';
-		foreach($this->plugins as $plugin => $path) {
-			if(!$path) {
-				$internalPlugins[] = $plugin;
-			} else {
-				$internalPlugins[] = '-' . $plugin;
-				$externalPluginsJS .= sprintf(
-					'tinymce.PluginManager.load("%s", "%s");' . "\n",
-					$plugin,
-					$path
-				);
+		$languages = array();
+
+		foreach (self::$configs as $configID => $config) {
+			$settings = $config->settings;
+			// parse plugins
+			$configPlugins = array();
+			foreach($config->plugins as $plugin => $path) {
+				if(!$path) {
+					$configPlugins[] = $plugin;
+					$internalPlugins[] = $plugin;
+				} else {
+					$configPlugins[] = '-' . $plugin;
+					if ( !array_key_exists($plugin, $externalPlugins) )
+					{
+						$externalPlugins[$plugin] = sprintf(
+							'tinymce.PluginManager.load("%s", "%s");',
+							$plugin,
+							$path
+						);
+					}
+				}
 			}
+
+			// save config plugins settings
+			$settings['plugins'] = implode(',', $configPlugins);
+
+			// buttons
+			foreach ($config->buttons as $i=>$buttons) {
+				// $settings['theme_advanced_buttons'.$i] = implode(',', $buttons); // tinymce3
+				$settings['toolbar'.$i] = implode(',', $buttons); // tinymce4
+			}
+
+			// languages
+			$languages[] = $config->getOption('language');
+
+			// save this config settings
+			$configs[$configID] = $settings;
 		}
-		$config['plugins'] = implode(',', $internalPlugins);
-		
-		foreach ($this->buttons as $i=>$buttons) {
-			$config['toolbar'.$i] = implode(',', $buttons);
+
+		// tinyMCE JS requirement
+		if ( $useGzip )
+		{
+			$tag = TinyMCE4_Compressor::renderTag(array(
+				'url' => TINYMCE4_DIR . '/thirdparty/tinymce/tiny_mce_gzip.php',
+				'plugins' => implode(',', $internalPlugins),
+				'themes' => 'advanced',
+				'languages' => implode(",", array_filter($languages))
+			), true);
+			preg_match('/src="([^"]*)"/', $tag, $matches);
+			Requirements::javascript(html_entity_decode($matches[1]));
 		}
-		
-		return "
+		else{
+			Requirements::javascript(TINYMCE4_DIR . '/thirdparty/tinymce/tinymce.jquery.min.js');
+		}
+
+		// block old scripts
+		Requirements::block(MCE_ROOT . 'tiny_mce_src.js');
+		Requirements::block(FRAMEWORK_DIR ."/javascript/HtmlEditorField.js");
+		Requirements::block('htmlEditorConfig');
+
+		// load replacements
+		Requirements::javascript(TINYMCE4_DIR ."/javascript/HtmlEditorField.js");
+
+		if(Member::currentUser()) {
+			CustomHtmlEditorConfig::set_active(Member::currentUser()->getHtmlEditorConfigForCMS());
+		}
+
+		// prepare external plugins js string
+		$externalPlugins = array_values($externalPlugins);
+		$externalPlugins = implode("\n	", $externalPlugins);
+
+		// tinyMCE config object and external plugings
+		$configsJS = "
 if((typeof tinyMCE != 'undefined')) {
-	$externalPluginsJS
-	var ssTinyMceConfig = " . Convert::raw2json($config) . ";
-}
-";
+	$externalPlugins
+	var ssTinyMceConfig = " . Convert::raw2json($configs) . ";
+}";
+		Requirements::customScript($configsJS, 'customHtmlEditorConfig');
 	}
 }

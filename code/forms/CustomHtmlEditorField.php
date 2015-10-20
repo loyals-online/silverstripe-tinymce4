@@ -27,102 +27,52 @@ class CustomHtmlEditorField extends TextareaField {
 	private static $sanitise_server_side = false;
 
 	protected $rows = 30;
-	
+
 	/**
-	 * Includes the JavaScript neccesary for this field to work using the {@link Requirements} system.
+	 * @deprecated since version 4.0
 	 */
 	public static function include_js() {
-		require_once TINYMCE4_PATH . '/thirdparty/tinymce/tiny_mce_gzip.php';
-
-		$configObj = CustomHtmlEditorConfig::get_active();
-
-		if(Config::inst()->get('CustomHtmlEditorField', 'use_gzip')) {
-			$internalPlugins = array();
-			foreach($configObj->getPlugins() as $plugin => $path) if(!$path) $internalPlugins[] = $plugin;
-			$tag = TinyMCE_Compressor::renderTag(array(
-				'url' => TINYMCE4_DIR . '/thirdparty/tinymce/tiny_mce_gzip.php',
-				'plugins' => implode(',', $internalPlugins),
-				'themes' => 'modern',
-				'languages' => $configObj->getOption('language')
-			), true);
-			preg_match('/src="([^"]*)"/', $tag, $matches);
-			Requirements::javascript(html_entity_decode($matches[1]));
-
-		} else {
-			Requirements::javascript(TINYMCE4_DIR . '/thirdparty/tinymce/tinymce.jquery.min.js');
-		} 
-
-		Requirements::customScript($configObj->generateJS(), 'htmlEditorConfig');
-
-		// block old scripts
-		Requirements::block(MCE_ROOT . 'tiny_mce_src.js');
-		Requirements::block(FRAMEWORK_DIR ."/javascript/HtmlEditorField.js");
-
-		// load replacements
-		Requirements::javascript(TINYMCE4_DIR ."/javascript/HtmlEditorField.js");
-
-		if(Member::currentUser()) {
-			CustomHtmlEditorConfig::set_active(Member::currentUser()->getHtmlEditorConfigForCMS());
-		}
+		Deprecation::notice('4.0', 'Use CustomHtmlEditorConfig::require_js() instead');
+		CustomHtmlEditorConfig::require_js();
 	}
-	
+
+
+	protected $editorConfig = null;
+
 	/**
+	 * Creates a new HTMLEditorField.
 	 * @see TextareaField::__construct()
-	 */
-	public function __construct($name, $title = null, $value = '') {
+	 *
+	 * @param string $name The internal field name, passed to forms.
+	 * @param string $title The human-readable field label.
+	 * @param mixed $value The value of the field.
+	 * @param string $config HTMLEditorConfig identifier to be used. Default to the active one.
+	 */	
+	public function __construct($name, $title = null, $value = '', $config = null) {
 		parent::__construct($name, $title, $value);
-		
-		self::include_js();
-	}
-	
-	/**
-	 * @return string
-	 */
-	public function Field($properties = array()) {
-		// mark up broken links
-		$value = Injector::inst()->create('HTMLValue', $this->value);
 
-		if($links = $value->getElementsByTagName('a')) foreach($links as $link) {
-			$matches = array();
-			
-			if(preg_match('/\[sitetree_link(?:\s*|%20|,)?id=([0-9]+)\]/i', $link->getAttribute('href'), $matches)) {
-				if(!DataObject::get_by_id('SiteTree', $matches[1])) {
-					$class = $link->getAttribute('class');
-					$link->setAttribute('class', ($class ? "$class ss-broken" : 'ss-broken'));
-				}
-			}
-
-			if(preg_match('/\[file_link(?:\s*|%20|,)?id=([0-9]+)\]/i', $link->getAttribute('href'), $matches)) {
-				if(!DataObject::get_by_id('File', $matches[1])) {
-					$class = $link->getAttribute('class');
-					$link->setAttribute('class', ($class ? "$class ss-broken" : 'ss-broken'));
-				}
-			}
-		}
-
-		$properties['Value'] = htmlentities($value->getContent(), ENT_COMPAT, 'UTF-8');
-
-		return parent::Field($properties);
+		$this->editorConfig = $config ? $config : CustomHtmlEditorConfig::get_active_identifier();
 	}
 
 	public function getAttributes() {
 		return array_merge(
 			parent::getAttributes(),
 			array(
-				'tinymce' => 'true',
-				'style'   => 'width: 97%; height: ' . ($this->rows * 16) . 'px', // prevents horizontal scrollbars
-				'value' => null,
+				'tinymce'     => 'true',
+				'style'       => 'width: 97%; height: ' . ($this->rows * 16) . 'px', // prevents horizontal scrollbars
+				'value'       => null,
+				'data-config' => $this->editorConfig
 			)
 		);
 	}
-	
+
 	public function saveInto(DataObjectInterface $record) {
 		if($record->hasField($this->name) && $record->escapeTypeForField($this->name) != 'xml') {
 			throw new Exception (
 				'HtmlEditorField->saveInto(): This field should save into a HTMLText or HTMLVarchar field.'
 			);
 		}
-		
+
 		$htmlValue = Injector::inst()->create('HTMLValue', $this->value);
 
 		// Sanitise if requested
@@ -138,8 +88,8 @@ class CustomHtmlEditorField extends TextareaField {
 
 			// Resample the images if the width & height have changed.
 			if($image = File::find(urldecode(Director::makeRelative($img->getAttribute('src'))))){
-				$width  = $img->getAttribute('width');
-				$height = $img->getAttribute('height');
+				$width  = (int)$img->getAttribute('width');
+				$height = (int)$img->getAttribute('height');
 
 				if($width && $height && ($width != $image->getWidth() || $height != $image->getHeight())) {
 					//Make sure that the resized image actually returns an image:
@@ -151,7 +101,14 @@ class CustomHtmlEditorField extends TextareaField {
 			// Add default empty title & alt attributes.
 			if(!$img->getAttribute('alt')) $img->setAttribute('alt', '');
 			if(!$img->getAttribute('title')) $img->setAttribute('title', '');
+
+			// Use this extension point to manipulate images inserted using TinyMCE, e.g. add a CSS class, change default title
+			// $image is the image, $img is the DOM model
+			$this->extend('processImage', $image, $img);
 		}
+
+		// optionally manipulate the HTML after a TinyMCE edit and prior to a save
+		$this->extend('processHTML', $htmlValue);
 
 		// Store into record
 		$record->{$this->name} = $htmlValue->getContent();
@@ -163,10 +120,10 @@ class CustomHtmlEditorField extends TextareaField {
 	public function performReadonlyTransformation() {
 		$field = $this->castedCopy('HtmlEditorField_Readonly');
 		$field->dontEscape = true;
-		
+
 		return $field;
 	}
-	
+
 	public function performDisabledTransformation() {
 		return $this->performReadonlyTransformation();
 	}
