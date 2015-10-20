@@ -14,8 +14,8 @@
         "issues": "https://github.com/Mediaweb/silverstripe-tinymce4/issues"
     },
     "require": {
-        "silverstripe/cms": "~3.1",
-        "silverstripe/framework": "~3.1"
+        "silverstripe/cms": "3.1.*",
+        "silverstripe/framework": "3.1.*"
     },
     "extra": {
         "installer-name": "tinymce4",
