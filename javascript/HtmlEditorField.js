@@ -499,29 +499,51 @@ ss.editorWrappers['default'] = ss.editorWrappers.tinyMCE;
 
 				this.addAnchorSelector();
 
+				this.resetFileField();
+
 				// Toggle field visibility depending on the link type.
 				this.find('div.content .field').hide();
-				this.find('.field#LinkType').show();
-				this.find('.field#' + linkType).show();
-				if(linkType == 'internal' || linkType == 'anchor') this.find('.field#Anchor').show();
-				if(linkType !== 'email') this.find('.field#TargetBlank').show();
-				if(linkType == 'anchor') this.find('.field#AnchorSelector').show();
-				this.find('.field#Description').show();
+				this.find('.field[id$="LinkType"]').show();
+				this.find('.field[id$="' + linkType +'_Holder"]').show();
+
+				if(linkType == 'internal' || linkType == 'anchor') {
+					this.find('.field[id$="Anchor_Holder"]').show();
+				}
+
+				if(linkType == 'email') {
+					this.find('.field[id$="Subject_Holder"]').show();
+				} else {
+					this.find('.field[id$="TargetBlank_Holder"]').show();
+				}
+
+				if(linkType == 'anchor') {
+					this.find('.field[id$="AnchorSelector_Holder"]').show();
+				}
+				this.find('.field[id$="Description_Holder"]').show();
 			},
 			/**
 			 * @return Object Keys: 'href', 'target', 'title'
 			 */
 			getLinkAttributes: function() {
-				var href, target = null, anchor = this.find(':input[name=Anchor]').val();
+				var href,
+					target = null,
+					subject = this.find(':input[name=Subject]').val(),
+					anchor = this.find(':input[name=Anchor]').val();
 				
 				// Determine target
-				if(this.find(':input[name=TargetBlank]').is(':checked')) target = '_blank';
-				
+				if(this.find(':input[name=TargetBlank]').is(':checked')) {
+					target = '_blank';
+				}
+
 				// All other attributes
 				switch(this.find(':input[name=LinkType]:checked').val()) {
 					case 'internal':
 						href = '[sitetree_link,id=' + this.find(':input[name=internal]').val() + ']';
-						if(anchor) href += '#' + anchor;
+
+						if(anchor) {
+							href += '#' + anchor;
+						}
+
 						break;
 
 					case 'anchor':
@@ -529,12 +551,15 @@ ss.editorWrappers['default'] = ss.editorWrappers.tinyMCE;
 						break;
 					
 					case 'file':
-						href = '[file_link,id=' + this.find(':input[name=file]').val() + ']';
+						href = '[file_link,id=' + this.find('.ss-uploadfield .ss-uploadfield-item').attr('data-fileid') + ']';
 						target = '_blank';
 						break;
 					
 					case 'email':
 						href = 'mailto:' + this.find(':input[name=email]').val();
+						if(subject) {
+							href += '?subject=' + encodeURIComponent(subject);
+						}
 						target = null;
 						break;
 
@@ -563,6 +588,17 @@ ss.editorWrappers['default'] = ss.editorWrappers.tinyMCE;
 					ed.removeLink();
 				});
 				this.close();
+			},
+
+			resetFileField: function() {
+				// If there's an attached item, remove it
+				var fileField = this.find('#file'),
+					fileUpload = fileField.data('fileupload'),
+					currentItem = fileField.find('.ss-uploadfield-item[data-fileid]');
+
+				if(currentItem.length) {
+					fileUpload._trigger('destroy', null, {content: currentItem});
+				}
 			},
 
 			/**
