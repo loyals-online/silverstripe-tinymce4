@@ -10,12 +10,11 @@
  * @package framework
  * @subpackage model
  */
-class CustomHTMLText extends HTMLText {
+class CustomHTMLText extends HTMLText
+{
 
-	public function scaffoldFormField($title = null, $params = null) {
-		return CustomHtmlEditorField::create($this->name, $title)->addExtraClass('stacked');
-	}
-
+    public function scaffoldFormField($title = null, $params = null)
+    {
+        return CustomHtmlEditorField::create($this->name, $title)->addExtraClass('stacked');
+    }
 }
-
-
