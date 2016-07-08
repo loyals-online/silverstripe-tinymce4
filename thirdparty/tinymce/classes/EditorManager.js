@@ -1,8 +1,8 @@
 /**
  * EditorManager.js
  *
- * Copyright, Moxiecode Systems AB
  * Released under LGPL License.
+ * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -25,13 +25,36 @@ define("tinymce/EditorManager", [
 	"tinymce/util/URI",
 	"tinymce/Env",
 	"tinymce/util/Tools",
+	"tinymce/util/Promise",
 	"tinymce/util/Observable",
 	"tinymce/util/I18n",
 	"tinymce/FocusManager"
-], function(Editor, DomQuery, DOMUtils, URI, Env, Tools, Observable, I18n, FocusManager) {
+], function(Editor, $, DOMUtils, URI, Env, Tools, Promise, Observable, I18n, FocusManager) {
 	var DOM = DOMUtils.DOM;
 	var explode = Tools.explode, each = Tools.each, extend = Tools.extend;
-	var instanceCounter = 0, beforeUnloadDelegate, EditorManager;
+	var instanceCounter = 0, beforeUnloadDelegate, EditorManager, boundGlobalEvents = false;
+
+	function globalEventDelegate(e) {
+		each(EditorManager.editors, function(editor) {
+			if (e.type === 'scroll') {
+				editor.fire('ScrollWindow', e);
+			} else {
+				editor.fire('ResizeWindow', e);
+			}
+		});
+	}
+
+	function toggleGlobalEvents(editors, state) {
+		if (state !== boundGlobalEvents) {
+			if (state) {
+				$(window).on('resize scroll', globalEventDelegate);
+			} else {
+				$(window).off('resize scroll', globalEventDelegate);
+			}
+
+			boundGlobalEvents = state;
+		}
+	}
 
 	function removeEditorFromList(editor) {
 		var editors = EditorManager.editors, removedFromList;
@@ -61,10 +84,11 @@ define("tinymce/EditorManager", [
 
 	function purgeDestroyedEditor(editor) {
 		// User has manually destroyed the editor lets clean up the mess
-		if (editor && !(editor.getContainer() || editor.getBody()).parentNode) {
+		if (editor && editor.initialized && !(editor.getContainer() || editor.getBody()).parentNode) {
 			removeEditorFromList(editor);
 			editor.unbindAllNativeEvents();
 			editor.destroy(true);
+			editor.removed = true;
 			editor = null;
 		}
 
@@ -78,7 +102,7 @@ define("tinymce/EditorManager", [
 		 * @property $
 		 * @type tinymce.dom.DomQuery
 		 */
-		$: DomQuery,
+		$: $,
 
 		/**
 		 * Major version of TinyMCE build.
@@ -138,7 +162,7 @@ define("tinymce/EditorManager", [
 			var self = this, baseURL, documentBaseURL, suffix = "", preInit, src;
 
 			// Get base URL for the current document
-			documentBaseURL = document.location.href;
+			documentBaseURL = URI.getDocumentBaseUrl(document.location);
 
 			// Check if the URL is a document based format like: http://site/dir/file and file:///
 			// leave other formats like applewebdata://... intact
@@ -165,8 +189,9 @@ define("tinymce/EditorManager", [
 					// tinymce.js tinymce.min.js tinymce.dev.js
 					// tinymce.jquery.js tinymce.jquery.min.js tinymce.jquery.dev.js
 					// tinymce.full.js tinymce.full.min.js tinymce.full.dev.js
+					var srcScript = src.substring(src.lastIndexOf('/'));
 					if (/tinymce(\.full|\.jquery|)(\.min|\.dev|)\.js/.test(src)) {
-						if (src.indexOf('.min') != -1) {
+						if (srcScript.indexOf('.min') != -1) {
 							suffix = '.min';
 						}
 
@@ -224,23 +249,49 @@ define("tinymce/EditorManager", [
 		},
 
 		/**
+		 * Overrides the default settings for editor instances.
+		 *
+		 * @method overrideDefaults
+		 * @param {Object} defaultSettings Defaults settings object.
+		 */
+		overrideDefaults: function(defaultSettings) {
+			var baseUrl, suffix;
+
+			baseUrl = defaultSettings.base_url;
+			if (baseUrl) {
+				this.baseURL = new URI(this.documentBaseURL).toAbsolute(baseUrl.replace(/\/+$/, ''));
+				this.baseURI = new URI(this.baseURL);
+			}
+
+			suffix = defaultSettings.suffix;
+			if (defaultSettings.suffix) {
+				this.suffix = suffix;
+			}
+
+			this.defaultSettings = defaultSettings;
+		},
+
+		/**
 		 * Initializes a set of editors. This method will create editors based on various settings.
 		 *
 		 * @method init
 		 * @param {Object} settings Settings object to be passed to each editor instance.
+		 * @return {tinymce.util.Promise} Promise that gets resolved with an array of editors when all editor instances are initialized.
 		 * @example
 		 * // Initializes a editor using the longer method
 		 * tinymce.EditorManager.init({
 		 *    some_settings : 'some value'
 		 * });
 		 *
-		 * // Initializes a editor instance using the shorter version
-		 * tinyMCE.init({
+		 * // Initializes a editor instance using the shorter version and with a promise
+		 * tinymce.init({
 		 *    some_settings : 'some value'
+		 * }).then(function(editors) {
+		 *    ...
 		 * });
 		 */
 		init: function(settings) {
-			var self = this, editors = [];
+			var self = this, result;
 
 			function createId(elm) {
 				var id = elm.id;
@@ -262,16 +313,6 @@ define("tinymce/EditorManager", [
 				return id;
 			}
 
-			function createEditor(id, settings, targetElm) {
-				if (!purgeDestroyedEditor(self.get(id))) {
-					var editor = new Editor(id, settings, self);
-
-					editor.targetElm = editor.targetElm || targetElm;
-					editors.push(editor);
-					editor.render();
-				}
-			}
-
 			function execCallback(name) {
 				var callback = settings[name];
 
@@ -286,31 +327,19 @@ define("tinymce/EditorManager", [
 				return className.constructor === RegExp ? className.test(elm.className) : DOM.hasClass(elm, className);
 			}
 
-			function readyHandler() {
-				var l, co;
-
-				DOM.unbind(window, 'ready', readyHandler);
-
-				execCallback('onpageload');
+			function findTargets(settings) {
+				var l, targets = [];
 
 				if (settings.types) {
-					// Process type specific selector
 					each(settings.types, function(type) {
-						each(DOM.select(type.selector), function(elm) {
-							createEditor(createId(elm), extend({}, settings, type), elm);
-						});
+						targets = targets.concat(DOM.select(type.selector));
 					});
 
-					return;
+					return targets;
 				} else if (settings.selector) {
-					// Process global selector
-					each(DOM.select(settings.selector), function(elm) {
-						createEditor(createId(elm), settings, elm);
-					});
-
-					return;
+					return DOM.select(settings.selector);
 				} else if (settings.target) {
-					createEditor(createId(settings.target), settings);
+					return [settings.target];
 				}
 
 				// Fallback to old setting
@@ -323,14 +352,14 @@ define("tinymce/EditorManager", [
 								var elm;
 
 								if ((elm = DOM.get(id))) {
-									createEditor(id, settings, elm);
+									targets.push(elm);
 								} else {
 									each(document.forms, function(f) {
 										each(f.elements, function(e) {
 											if (e.name === id) {
 												id = 'mce_editor_' + instanceCounter++;
 												DOM.setAttrib(e, 'id', id);
-												createEditor(id, settings, e);
+												targets.push(e);
 											}
 										});
 									});
@@ -347,44 +376,83 @@ define("tinymce/EditorManager", [
 							}
 
 							if (!settings.editor_selector || hasClass(elm, settings.editor_selector)) {
-								createEditor(createId(elm), settings, elm);
+								targets.push(elm);
 							}
 						});
 						break;
 				}
 
-				// Call onInit when all editors are initialized
-				if (settings.oninit) {
-					l = co = 0;
+				return targets;
+			}
 
-					each(editors, function(ed) {
-						co++;
+			var provideResults = function(editors) {
+				result = editors;
+			};
 
-						if (!ed.initialized) {
-							// Wait for it
-							ed.on('init', function() {
-								l++;
+			function initEditors() {
+				var initCount = 0, editors = [], targets;
 
-								// All done
-								if (l == co) {
-									execCallback('oninit');
-								}
-							});
-						} else {
-							l++;
-						}
+				function createEditor(id, settings, targetElm) {
+					var editor = new Editor(id, settings, self);
 
-						// All done
-						if (l == co) {
-							execCallback('oninit');
+					editors.push(editor);
+
+					editor.on('init', function() {
+						if (++initCount === targets.length) {
+							provideResults(editors);
 						}
 					});
+
+					editor.targetElm = editor.targetElm || targetElm;
+					editor.render();
 				}
+
+				DOM.unbind(window, 'ready', initEditors);
+				execCallback('onpageload');
+
+				targets = $.unique(findTargets(settings));
+
+				// TODO: Deprecate this one
+				if (settings.types) {
+					each(settings.types, function(type) {
+						Tools.each(targets, function(elm) {
+							if (DOM.is(elm, type.selector)) {
+								createEditor(createId(elm), extend({}, settings, type), elm);
+								return false;
+							}
+
+							return true;
+						});
+					});
+
+					return;
+				}
+
+				Tools.each(targets, function(elm) {
+					purgeDestroyedEditor(self.get(elm.id));
+				});
+
+				targets = Tools.grep(targets, function(elm) {
+					return !self.get(elm.id);
+				});
+
+				each(targets, function(elm) {
+					createEditor(createId(elm), settings, elm);
+				});
 			}
 
 			self.settings = settings;
+			DOM.bind(window, 'ready', initEditors);
 
-			DOM.bind(window, 'ready', readyHandler);
+			return new Promise(function(resolve) {
+				if (result) {
+					resolve(result);
+				} else {
+					provideResults = function(editors) {
+						resolve(editors);
+					};
+				}
+			});
 		},
 
 		/**
@@ -425,6 +493,8 @@ define("tinymce/EditorManager", [
 			// Add named and index editor instance
 			editors[editor.id] = editor;
 			editors.push(editor);
+
+			toggleGlobalEvents(editors, true);
 
 			// Doesn't call setActive method since we don't want
 			// to fire a bunch of activate/deactivate calls while initializing
@@ -494,7 +564,7 @@ define("tinymce/EditorManager", [
 			}
 
 			// Remove editors by selector
-			if (typeof(selector) == "string") {
+			if (typeof selector == "string") {
 				selector = selector.selector || selector;
 
 				each(DOM.select(selector), function(elm) {
@@ -532,6 +602,8 @@ define("tinymce/EditorManager", [
 
 			editor.remove();
 
+			toggleGlobalEvents(editors, editors.length > 0);
+
 			return editor;
 		},
 
@@ -539,9 +611,9 @@ define("tinymce/EditorManager", [
 		 * Executes a specific command on the currently active editor.
 		 *
 		 * @method execCommand
-		 * @param {String} c Command to perform for example Bold.
-		 * @param {Boolean} u Optional boolean state if a UI should be presented for the command or not.
-		 * @param {String} v Optional value parameter like for example an URL to a link.
+		 * @param {String} cmd Command to perform for example Bold.
+		 * @param {Boolean} ui Optional boolean state if a UI should be presented for the command or not.
+		 * @param {String} value Optional value parameter like for example an URL to a link.
 		 * @return {Boolean} true/false if the command was executed or not.
 		 */
 		execCommand: function(cmd, ui, value) {

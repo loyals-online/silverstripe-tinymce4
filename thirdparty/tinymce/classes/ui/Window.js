@@ -1,8 +1,8 @@
 /**
  * Window.js
  *
- * Copyright, Moxiecode Systems AB
  * Released under LGPL License.
+ * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -19,9 +19,86 @@ define("tinymce/ui/Window", [
 	"tinymce/ui/FloatPanel",
 	"tinymce/ui/Panel",
 	"tinymce/ui/DomUtils",
-	"tinymce/ui/DragHelper"
-], function(FloatPanel, Panel, DomUtils, DragHelper) {
+	"tinymce/dom/DomQuery",
+	"tinymce/ui/DragHelper",
+	"tinymce/ui/BoxUtils",
+	"tinymce/Env",
+	"tinymce/util/Delay"
+], function(FloatPanel, Panel, DomUtils, $, DragHelper, BoxUtils, Env, Delay) {
 	"use strict";
+
+	var windows = [], oldMetaValue = '';
+
+	function toggleFullScreenState(state) {
+		var noScaleMetaValue = 'width=device-width,initial-scale=1.0,user-scalable=0,minimum-scale=1.0,maximum-scale=1.0',
+			viewport = $("meta[name=viewport]")[0],
+			contentValue;
+
+		if (Env.overrideViewPort === false) {
+			return;
+		}
+
+		if (!viewport) {
+			viewport = document.createElement('meta');
+			viewport.setAttribute('name', 'viewport');
+			document.getElementsByTagName('head')[0].appendChild(viewport);
+		}
+
+		contentValue = viewport.getAttribute('content');
+		if (contentValue && typeof oldMetaValue != 'undefined') {
+			oldMetaValue = contentValue;
+		}
+
+		viewport.setAttribute('content', state ? noScaleMetaValue : oldMetaValue);
+	}
+
+	function toggleBodyFullScreenClasses(classPrefix) {
+		for (var i = 0; i < windows.length; i++) {
+			if (windows[i]._fullscreen) {
+				return;
+			}
+		}
+
+		$([document.documentElement, document.body]).removeClass(classPrefix + 'fullscreen');
+	}
+
+	function handleWindowResize() {
+		if (!Env.desktop) {
+			var lastSize = {
+				w: window.innerWidth,
+				h: window.innerHeight
+			};
+
+			Delay.setInterval(function() {
+				var w = window.innerWidth,
+					h = window.innerHeight;
+
+				if (lastSize.w != w || lastSize.h != h) {
+					lastSize = {
+						w: w,
+						h: h
+					};
+
+					$(window).trigger('resize');
+				}
+			}, 100);
+		}
+
+		function reposition() {
+			var i, rect = DomUtils.getWindowSize(), layoutRect;
+
+			for (i = 0; i < windows.length; i++) {
+				layoutRect = windows[i].layoutRect();
+
+				windows[i].moveTo(
+					windows[i].settings.x || Math.max(0, rect.w / 2 - layoutRect.w / 2),
+					windows[i].settings.y || Math.max(0, rect.h / 2 - layoutRect.h / 2)
+				);
+			}
+		}
+
+		$(window).on('resize', reposition);
+	}
 
 	var Window = FloatPanel.extend({
 		modal: true,
@@ -54,11 +131,12 @@ define("tinymce/ui/Window", [
 			self._super(settings);
 
 			if (self.isRtl()) {
-				self.addClass('rtl');
+				self.classes.add('rtl');
 			}
 
-			self.addClass('window');
-			self._fixed = true;
+			self.classes.add('window');
+			self.bodyClasses.add('window-body');
+			self.state.set('fixed', true);
 
 			// Create statusbar
 			if (settings.buttons) {
@@ -75,12 +153,14 @@ define("tinymce/ui/Window", [
 					items: settings.buttons
 				});
 
-				self.statusbar.addClass('foot');
+				self.statusbar.classes.add('foot');
 				self.statusbar.parent(self);
 			}
 
 			self.on('click', function(e) {
-				if (e.target.className.indexOf(self.classPrefix + 'close') != -1) {
+				var closeClass = self.classPrefix + 'close';
+
+				if (DomUtils.hasClass(e.target, closeClass) || DomUtils.hasClass(e.target.parentNode, closeClass)) {
 					self.close();
 				}
 			});
@@ -175,8 +255,8 @@ define("tinymce/ui/Window", [
 
 			var rect = DomUtils.getWindowSize();
 
-			layoutRect.x = Math.max(0, rect.w / 2 - layoutRect.w / 2);
-			layoutRect.y = Math.max(0, rect.h / 2 - layoutRect.h / 2);
+			layoutRect.x = self.settings.x || Math.max(0, rect.w / 2 - layoutRect.w / 2);
+			layoutRect.y = self.settings.y || Math.max(0, rect.h / 2 - layoutRect.h / 2);
 
 			return layoutRect;
 		},
@@ -198,8 +278,10 @@ define("tinymce/ui/Window", [
 				headerHtml = (
 					'<div id="' + id + '-head" class="' + prefix + 'window-head">' +
 						'<div id="' + id + '-title" class="' + prefix + 'title">' + self.encode(settings.title) + '</div>' +
-						'<button type="button" class="' + prefix + 'close" aria-hidden="true">\u00d7</button>' +
 						'<div id="' + id + '-dragh" class="' + prefix + 'dragh"></div>' +
+						'<button type="button" class="' + prefix + 'close" aria-hidden="true">' +
+							'<i class="mce-ico mce-i-remove"></i>' +
+						'</button>' +
 					'</div>'
 				);
 			}
@@ -208,7 +290,7 @@ define("tinymce/ui/Window", [
 				html = '<iframe src="' + settings.url + '" tabindex="-1"></iframe>';
 			}
 
-			if (typeof(html) == "undefined") {
+			if (typeof html == "undefined") {
 				html = layout.renderHtml(self);
 			}
 
@@ -217,10 +299,10 @@ define("tinymce/ui/Window", [
 			}
 
 			return (
-				'<div id="' + id + '" class="' + self.classes() + '" hidefocus="1">' +
+				'<div id="' + id + '" class="' + self.classes + '" hidefocus="1">' +
 					'<div class="' + self.classPrefix + 'reset" role="application">' +
 						headerHtml +
-						'<div id="' + id + '-body" class="' + self.classes('body') + '">' +
+						'<div id="' + id + '-body" class="' + self.bodyClasses + '">' +
 							html +
 						'</div>' +
 						footerHtml +
@@ -240,7 +322,7 @@ define("tinymce/ui/Window", [
 			var self = this, documentElement = document.documentElement, slowRendering, prefix = self.classPrefix, layoutRect;
 
 			if (state != self._fullscreen) {
-				DomUtils.on(window, 'resize', function() {
+				$(window).on('resize', function() {
 					var time;
 
 					if (self._fullscreen) {
@@ -256,7 +338,7 @@ define("tinymce/ui/Window", [
 							}
 						} else {
 							if (!self._timer) {
-								self._timer = setTimeout(function() {
+								self._timer = Delay.setTimeout(function() {
 									var rect = DomUtils.getWindowSize();
 									self.moveTo(0, 0).resizeTo(rect.w, rect.h);
 
@@ -271,22 +353,20 @@ define("tinymce/ui/Window", [
 				self._fullscreen = state;
 
 				if (!state) {
-					self._borderBox = self.parseBox(self.settings.border);
+					self.borderBox = BoxUtils.parseBox(self.settings.border);
 					self.getEl('head').style.display = '';
 					layoutRect.deltaH += layoutRect.headerH;
-					DomUtils.removeClass(documentElement, prefix + 'fullscreen');
-					DomUtils.removeClass(document.body, prefix + 'fullscreen');
-					self.removeClass('fullscreen');
+					$([documentElement, document.body]).removeClass(prefix + 'fullscreen');
+					self.classes.remove('fullscreen');
 					self.moveTo(self._initial.x, self._initial.y).resizeTo(self._initial.w, self._initial.h);
 				} else {
 					self._initial = {x: layoutRect.x, y: layoutRect.y, w: layoutRect.w, h: layoutRect.h};
 
-					self._borderBox = self.parseBox('0');
+					self.borderBox = BoxUtils.parseBox('0');
 					self.getEl('head').style.display = 'none';
 					layoutRect.deltaH -= layoutRect.headerH + 2;
-					DomUtils.addClass(documentElement, prefix + 'fullscreen');
-					DomUtils.addClass(document.body, prefix + 'fullscreen');
-					self.addClass('fullscreen');
+					$([documentElement, document.body]).addClass(prefix + 'fullscreen');
+					self.classes.add('fullscreen');
 
 					var rect = DomUtils.getWindowSize();
 					self.moveTo(0, 0).resizeTo(rect.w, rect.h);
@@ -305,7 +385,8 @@ define("tinymce/ui/Window", [
 			var self = this, startPos;
 
 			setTimeout(function() {
-				self.addClass('in');
+				self.classes.add('in');
+				self.fire('open');
 			}, 0);
 
 			self._super();
@@ -334,6 +415,9 @@ define("tinymce/ui/Window", [
 					self.close();
 				}
 			});
+
+			windows.push(self);
+			toggleFullScreenState(true);
 		},
 
 		/**
@@ -353,7 +437,7 @@ define("tinymce/ui/Window", [
 		 * @return {tinymce.ui.Control} Current control instance.
 		 */
 		remove: function() {
-			var self = this, prefix = self.classPrefix;
+			var self = this, i;
 
 			self.dragHelper.destroy();
 			self._super();
@@ -362,10 +446,15 @@ define("tinymce/ui/Window", [
 				this.statusbar.remove();
 			}
 
-			if (self._fullscreen) {
-				DomUtils.removeClass(document.documentElement, prefix + 'fullscreen');
-				DomUtils.removeClass(document.body, prefix + 'fullscreen');
+			i = windows.length;
+			while (i--) {
+				if (windows[i] === self) {
+					windows.splice(i, 1);
+				}
 			}
+
+			toggleFullScreenState(windows.length > 0);
+			toggleBodyFullScreenClasses(self.classPrefix);
 		},
 
 		/**
@@ -379,6 +468,8 @@ define("tinymce/ui/Window", [
 			return ifr ? ifr.contentWindow : null;
 		}
 	});
+
+	handleWindowResize();
 
 	return Window;
 });

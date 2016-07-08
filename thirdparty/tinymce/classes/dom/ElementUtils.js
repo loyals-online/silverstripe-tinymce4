@@ -1,8 +1,8 @@
 /**
  * ElementUtils.js
  *
- * Copyright, Moxiecode Systems AB
  * Released under LGPL License.
+ * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -12,6 +12,7 @@
  * Utility class for various element specific functions.
  *
  * @private
+ * @class tinymce.dom.ElementUtils
  */
 define("tinymce/dom/ElementUtils", [
 	"tinymce/dom/BookmarkManager",
@@ -49,7 +50,7 @@ define("tinymce/dom/ElementUtils", [
 					var name = attr.nodeName.toLowerCase();
 
 					// Don't compare internal attributes or style
-					if (name.indexOf('_') !== 0 && name !== 'style' && name !== 'data-mce-style') {
+					if (name.indexOf('_') !== 0 && name !== 'style' && name !== 'data-mce-style' && name != 'data-mce-fragment') {
 						attribs[name] = dom.getAttrib(node, name);
 					}
 				});

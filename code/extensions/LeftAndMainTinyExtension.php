@@ -37,7 +37,7 @@ class LeftAndMainTinyExtension extends LeftAndMainExtension {
 			$htmlEditorConfig->setOption('content_css', implode(',', $cssFiles));
 		}
 
-		CustomHTMLEditorField::include_js();
+		CustomHtmlEditorConfig::require_js();
 
 	}
 }

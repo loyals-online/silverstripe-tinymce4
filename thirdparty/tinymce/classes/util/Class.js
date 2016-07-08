@@ -1,11 +1,15 @@
 /**
  * Class.js
  *
- * Copyright 2003-2012, Moxiecode Systems AB, All rights reserved.
+ * Released under LGPL License.
+ * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
+ *
+ * License: http://www.tinymce.com/license
+ * Contributing: http://www.tinymce.com/contributing
  */
 
 /**
- * This utilitiy class is used for easier inheritage.
+ * This utilitiy class is used for easier inheritance.
  *
  * Features:
  * * Exposed super functions: this._super();
@@ -84,8 +88,6 @@ define("tinymce/util/Class", [
 		// Add mixins
 		if (prop.Mixins) {
 			each(prop.Mixins, function(mixin) {
-				mixin = mixin;
-
 				for (var name in mixin) {
 					if (name !== "init") {
 						prop[name] = mixin[name];

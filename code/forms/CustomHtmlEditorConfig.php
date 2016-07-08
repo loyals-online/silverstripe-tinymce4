@@ -394,7 +394,7 @@ class CustomHtmlEditorConfig {
 			Requirements::javascript(html_entity_decode($matches[1]));
 		}
 		else{
-			Requirements::javascript(TINYMCE4_DIR . '/thirdparty/tinymce/tinymce.jquery.min.js');
+			Requirements::javascript(TINYMCE4_DIR . '/thirdparty/tinymce/jquery.tinymce.min.js');
 		}
 
 		// block old scripts

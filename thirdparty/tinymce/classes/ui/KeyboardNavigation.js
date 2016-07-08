@@ -1,8 +1,8 @@
 /**
  * KeyboardNavigation.js
  *
- * Copyright, Moxiecode Systems AB
  * Released under LGPL License.
+ * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -26,6 +26,10 @@ define("tinymce/ui/KeyboardNavigation", [
 	return function(settings) {
 		var root = settings.root, focusedElement, focusedControl;
 
+		function isElement(node) {
+			return node && node.nodeType === 1;
+		}
+
 		try {
 			focusedElement = document.activeElement;
 		} catch (ex) {
@@ -46,7 +50,11 @@ define("tinymce/ui/KeyboardNavigation", [
 		function getRole(elm) {
 			elm = elm || focusedElement;
 
-			return elm && elm.getAttribute('role');
+			if (isElement(elm)) {
+				return elm.getAttribute('role');
+			}
+
+			return null;
 		}
 
 		/**
@@ -77,7 +85,7 @@ define("tinymce/ui/KeyboardNavigation", [
 		function getAriaProp(name) {
 			var elm = focusedElement;
 
-			if (elm) {
+			if (isElement(elm)) {
 				return elm.getAttribute('aria-' + name);
 			}
 		}
@@ -94,7 +102,7 @@ define("tinymce/ui/KeyboardNavigation", [
 
 			// Notice: since type can be "email" etc we don't check the type
 			// So all input elements gets treated as text input elements
-			return tagName == "INPUT" || tagName == "TEXTAREA";
+			return tagName == "INPUT" || tagName == "TEXTAREA" || tagName == "SELECT";
 		}
 
 		/**
@@ -109,7 +117,7 @@ define("tinymce/ui/KeyboardNavigation", [
 				return true;
 			}
 
-			if (/^(button|menuitem|checkbox|tab|menuitemcheckbox|option|gridcell)$/.test(getRole(elm))) {
+			if (/^(button|menuitem|checkbox|tab|menuitemcheckbox|option|gridcell|slider)$/.test(getRole(elm))) {
 				return true;
 			}
 
@@ -339,6 +347,10 @@ define("tinymce/ui/KeyboardNavigation", [
 			function handleNonTabOrEscEvent(e, handler) {
 				// Ignore non tab keys for text elements
 				if (isTextInputElement(focusedElement)) {
+					return;
+				}
+
+				if (getRole(focusedElement) === 'slider') {
 					return;
 				}
 

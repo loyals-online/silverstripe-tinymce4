@@ -119,13 +119,13 @@ class TinyMCE4_Compressor {
 			$this->settings["source"] = ($src === "true");
 
 		// Add core
-		$files[] = "tinymce.jquery";
+		$files[] = "tinymce";
 		foreach ($languages as $language)
 			$files[] = "langs/$language";
 
 		// Add plugins
 		foreach ($plugins as $plugin) {
-			$files[] = "plugins/$plugin/editor_plugin";
+			$files[] = "plugins/$plugin/plugin";
 
 			foreach ($languages as $language)
 				$files[] = "plugins/$plugin/langs/$language";
@@ -133,7 +133,7 @@ class TinyMCE4_Compressor {
 
 		// Add themes
 		foreach ($themes as $theme) {
-			$files[] = "themes/$theme/editor_template";
+			$files[] = "themes/$theme/theme";
 
 			foreach ($languages as $language)
 				$files[] = "themes/$theme/langs/$language";
@@ -209,7 +209,7 @@ class TinyMCE4_Compressor {
 
 		// Write cached file
 		if ($this->settings["disk_cache"])
-			@file_put_contents($cacheFile, $buffer);	
+			@file_put_contents($cacheFile, $buffer);
 
 		// Stream contents to client
 		echo $buffer;
@@ -220,7 +220,7 @@ class TinyMCE4_Compressor {
 	 *
 	 * @param Array $settings Name/value array with settings for the script tag.
 	 * @param Bool  $return   The script tag is return instead of being output if true
-	 * @return String the tag is returned if $return is true  
+	 * @return String the tag is returned if $return is true
 	 */
 	public static function renderTag($tagSettings, $return = false) {
 		$settings = array_merge(self::$defaultSettings, $tagSettings);
@@ -248,10 +248,10 @@ class TinyMCE4_Compressor {
 
 		// Add any explicitly specified files if the default settings have been overriden by the tag ones
 		/*
-		 * Specifying tag files will override (rather than merge with) any site-specific ones set in the 
+		 * Specifying tag files will override (rather than merge with) any site-specific ones set in the
 		 * TinyMCE_Compressor object creation.  Note that since the parameter parser limits content to alphanumeric
 		 * only base filenames can be specified.  The file extension is assumed to be ".js" and the directory is
-		 * the TinyMCE root directory.  A typical use of this is to include a script which initiates the TinyMCE object. 
+		 * the TinyMCE root directory.  A typical use of this is to include a script which initiates the TinyMCE object.
 		 */
 		if (isset($tagSettings["files"]))
 			$scriptSrc .= "&files=" .(is_array($settings["files"]) ? implode(',', $settings["files"]) : $settings["files"]);

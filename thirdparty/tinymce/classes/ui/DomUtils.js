@@ -1,13 +1,19 @@
 /**
- * DOMUtils.js
+ * DomUtils.js
  *
- * Copyright, Moxiecode Systems AB
  * Released under LGPL License.
+ * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
  */
 
+/**
+ * Private UI DomUtils proxy.
+ *
+ * @private
+ * @class tinymce.ui.DomUtils
+ */
 define("tinymce/ui/DomUtils", [
 	"tinymce/util/Tools",
 	"tinymce/dom/DOMUtils"
@@ -19,6 +25,24 @@ define("tinymce/ui/DomUtils", [
 	return {
 		id: function() {
 			return 'mceu_' + (count++);
+		},
+
+		create: function(name, attrs, children) {
+			var elm = document.createElement(name);
+
+			DOMUtils.DOM.setAttribs(elm, attrs);
+
+			if (typeof children === 'string') {
+				elm.innerHTML = children;
+			} else {
+				Tools.each(children, function(child) {
+					if (child.nodeType) {
+						elm.appendChild(child);
+					}
+				});
+			}
+
+			return elm;
 		},
 
 		createFragment: function(html) {
@@ -57,15 +81,15 @@ define("tinymce/ui/DomUtils", [
 			return document.getElementById(id);
 		},
 
-		addClass : function(elm, cls) {
+		addClass: function(elm, cls) {
 			return DOMUtils.DOM.addClass(elm, cls);
 		},
 
-		removeClass : function(elm, cls) {
+		removeClass: function(elm, cls) {
 			return DOMUtils.DOM.removeClass(elm, cls);
 		},
 
-		hasClass : function(elm, cls) {
+		hasClass: function(elm, cls) {
 			return DOMUtils.DOM.hasClass(elm, cls);
 		},
 

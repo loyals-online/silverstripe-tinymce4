@@ -1,8 +1,8 @@
 /**
  * URI.js
  *
- * Copyright, Moxiecode Systems AB
  * Released under LGPL License.
+ * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -389,6 +389,43 @@ define("tinymce/util/URI", [
 
 			return self.source;
 		}
+	};
+
+	URI.parseDataUri = function(uri) {
+		var type, matches;
+
+		uri = decodeURIComponent(uri).split(',');
+
+		matches = /data:([^;]+)/.exec(uri[0]);
+		if (matches) {
+			type = matches[1];
+		}
+
+		return {
+			type: type,
+			data: uri[1]
+		};
+	};
+
+	URI.getDocumentBaseUrl = function(loc) {
+		var baseUrl;
+
+		// Pass applewebdata:// and other non web protocols though
+		if (loc.protocol.indexOf('http') !== 0 && loc.protocol !== 'file:') {
+			baseUrl = loc.href;
+		} else {
+			baseUrl = loc.protocol + '//' + loc.host + loc.pathname;
+		}
+
+		if (/^[^:]+:\/\/\/?[^\/]+\//.test(baseUrl)) {
+			baseUrl = baseUrl.replace(/[\?#].*$/, '').replace(/[\/\\][^\/]+$/, '');
+
+			if (!/[\/\\]$/.test(baseUrl)) {
+				baseUrl += '/';
+			}
+		}
+
+		return baseUrl;
 	};
 
 	return URI;

@@ -31,9 +31,12 @@
 
 		init : function(ed, url) {
 			ed.addButton('link', {
-				title: ed.getLang('tinymce_ssbuttons', 'insertlink'),
+				icon: 'link',
+				tooltip: 'insertlink',
 				cmd: 'sslink',
 				class: 'mce_link',
+				shortcut: 'Meta+K',
+				stateSelector: 'a[href]',
 				onPostRender: function() {
 					var ctrl = this;
 
@@ -46,7 +49,8 @@
 			});
 
 			ed.addButton('image', {
-				title: ed.getLang('tinymce_ssbuttons', 'insertmedia'),
+				icon: 'image',
+				tooltip: 'insertmedia',
 				cmd: 'ssmedia',
 				class: 'mce_image'
 			});
