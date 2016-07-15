@@ -106,11 +106,11 @@
 							extraHeight += statusbar.height();
 						}
 
-						container.find('.mce-container-body .mce-edit-area.mce-container').css({height: 'calc(100% - ' + extraHeight + 'px)'});
-
-						console.log(container.parents('[role=tabpanel]').attr('id'));
-						e.target.container.style.width = container.parents('[role=tabpanel]').width() + 'px';
-						e.target.container.style.left = container.parents('[role=tabpanel]').offset().left + 'px';
+						if(container.length && container.parents('[role=tabpanel]').length) {
+							container.find('.mce-container-body .mce-edit-area.mce-container').css({height: 'calc(100% - ' + extraHeight + 'px)'});
+							e.target.container.style.width = container.parents('[role=tabpanel]').width() + 'px';
+							e.target.container.style.left = container.parents('[role=tabpanel]').offset().left + 'px';
+						}
 					} else {
 						container.find('.mce-container-body .mce-edit-area.mce-container').css({height: 'auto'});
 						e.target.container.style.width = '100%';
