@@ -595,7 +595,12 @@ ss.editorWrappers['default'] = ss.editorWrappers.tinyMCE;
 						target = null;
 						break;
 
-					// case 'external':
+                    case 'telephone':
+                        href = 'tel:' + this.find(':input[name=telephone]').val();
+                        target = null;
+                        break;
+
+                    // case 'external':
 					default:
 						href = this.find(':input[name=external]').val();
 						// Prefix the URL with "http://" if no prefix is found
@@ -874,6 +879,12 @@ ss.editorWrappers['default'] = ss.editorWrappers.tinyMCE;
 						Description: title,
 						TargetBlank: target ? true : false
 					};
+                } else if(href.match(/^tel:(.*)$/)) {
+                    return {
+                        LinkType: 'telephone',
+                        telephone: RegExp.$1,
+                        Description: title
+                    };
 				} else if(href) {
 					return {
 						LinkType: 'external',
