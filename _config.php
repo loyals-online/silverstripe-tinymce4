@@ -39,7 +39,7 @@ CustomHtmlEditorConfig::get('cms')->disablePlugins('contextmenu');
 
 CustomHtmlEditorConfig::get('cms')->enablePlugins('media', 'fullscreen', 'colorpicker', 'importcss');
 CustomHtmlEditorConfig::get('cms')->enablePlugins(array(
-	'ssbuttons' => '/' . TINYMCE4_DIR . '/thirdparty/tinymce_ssbuttons/editor_plugin_src.js'
+	'ssbuttons' => Director::baseURL() . TINYMCE4_DIR . '/thirdparty/tinymce_ssbuttons/editor_plugin_src.js'
 ));
 
 CustomHtmlEditorConfig::get('cms')->addButtonsToLine(1, 'unlink', 'anchor', '|', 'code', 'fullscreen', '|');
