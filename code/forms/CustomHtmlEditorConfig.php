@@ -97,6 +97,8 @@ class CustomHtmlEditorConfig {
 		'relative_urls' => true,
 		'verify_html' => true,
 		'browser_spellcheck' => true,
+
+        'branding' => false,
 	);
 
 	/**
