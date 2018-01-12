@@ -249,7 +249,7 @@ ss.editorWrappers['default'] = ss.editorWrappers.tinyMCE;
 			onremove: function() {
 				var ed = tinyMCE.get(this.attr('id'));
 
-				if (ed.length > 0) {
+				if (ed) {
 					try {
 						ed.remove();
 					} catch(ex) {}
