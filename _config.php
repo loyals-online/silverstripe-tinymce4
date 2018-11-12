@@ -3,7 +3,11 @@
 define('TINYMCE4_PATH', dirname(__FILE__));
 define('TINYMCE4_DIR', basename(TINYMCE4_PATH));
 
-Object::useCustomClass('HtmlEditorField', 'CustomHtmlEditorField');
+// Ensure compatibility with PHP 7.2 ("object" is a reserved word),
+// with SilverStripe 3.6 (using Object) and SilverStripe 3.7 (using SS_Object)
+if (!class_exists('SS_Object')) class_alias('Object', 'SS_Object');
+
+SS_Object::useCustomClass('HtmlEditorField', 'CustomHtmlEditorField');
 Config::inst()->update('HtmlEditorField', 'use_gzip', false);
 
 // Default CMS HTMLEditorConfig
