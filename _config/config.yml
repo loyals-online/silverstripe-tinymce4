@@ -8,3 +8,7 @@ LeftAndMain:
 SiteTree:
   extensions:
     ['SiteTreeTinyExtension']
+
+HtmlEditorField_Toolbar:
+  extensions:
+    - HTMLEditorToolbarExtension
